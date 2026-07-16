@@ -6137,6 +6137,22 @@ def create_model_info_response(
                 base["max_input_tokens"] = int(model_group_info.max_input_tokens)
             if model_group_info.max_output_tokens is not None:
                 base["max_output_tokens"] = int(model_group_info.max_output_tokens)
+            # Surface reasoning / supported-params so discovery clients (Grok CLI,
+            # OpenAI-compatible SDKs) can gate reasoning_effort client-side without
+            # needing a separate /model/info round-trip.
+            if model_group_info.supported_openai_params:
+                base["supported_openai_params"] = model_group_info.supported_openai_params
+                # Synthesise Grok CLI model-cache fields so the Grok TUI / CLI
+                # treats this model as reasoning-capable.  The Grok CLI expects
+                # reasoning_effort (list of effort levels) and
+                # supports_reasoning_effort (bool).  When reasoning_effort is
+                # in supported_openai_params we advertise the OpenAI standard set
+                # plus "xhigh" for models that declare it.
+                if "reasoning_effort" in model_group_info.supported_openai_params:
+                    base["reasoning_effort"] = ["low", "medium", "high", "xhigh"]
+                    base["supports_reasoning_effort"] = True
+            if model_group_info.supports_reasoning:
+                base["supports_reasoning"] = True
 
     if not include_metadata:
         return base

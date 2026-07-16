@@ -1991,12 +1991,20 @@ class BaseLLMHTTPHandler:
         forwarded_headers = kwargs.get("headers", None)
         # Also check for extra_headers in kwargs (from config or direct calls)
         extra_headers_from_kwargs = kwargs.get("extra_headers", None)
+        # NEW: also pull from litellm_params.extra_headers so that the
+        # dynamic_credentials_hook (which sets data["extra_headers"]) is honored
+        # on the Anthropic /v1/messages passthrough path.
+        extra_headers_from_params = None
+        if hasattr(litellm_params, "extra_headers") and litellm_params.extra_headers:
+            extra_headers_from_params = litellm_params.extra_headers
         # Merge all header sources: forwarded < extra_headers < provider_specific
         merged_headers = {}
         if forwarded_headers:
             merged_headers.update(forwarded_headers)
         if extra_headers_from_kwargs:
             merged_headers.update(extra_headers_from_kwargs)
+        if extra_headers_from_params:
+            merged_headers.update(extra_headers_from_params)
         if provider_specific_headers:
             merged_headers.update(provider_specific_headers)
         (
